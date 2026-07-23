@@ -137,3 +137,126 @@ async def test_user_budget_limit_entry_objects_coerced():
         return_value=1.0,
     ):
         await _user_multi_budget_check(user_object=user)
+
+
+def _spend_by_counter_key(spend_map: dict[str, float]):
+    async def fake_get_spend(counter_key, fallback_spend, max_budget=None, **kwargs):
+        return spend_map.get(counter_key, 0.0)
+
+    return fake_get_spend
+
+
+@pytest.mark.asyncio
+async def test_three_windows_all_under_budget():
+    user = _make_user(
+        budget_limits=[
+            {"budget_duration": "1hr", "max_budget": 5.0, "reset_at": None},
+            {"budget_duration": "1d", "max_budget": 50.0, "reset_at": None},
+            {"budget_duration": "1mo", "max_budget": 500.0, "reset_at": None},
+        ]
+    )
+    spend_map = {
+        "spend:user:test-user-123:window:1hr": 4.0,
+        "spend:user:test-user-123:window:1d": 40.0,
+        "spend:user:test-user-123:window:1mo": 400.0,
+    }
+    with patch(
+        "litellm.proxy.proxy_server.get_current_spend",
+        side_effect=_spend_by_counter_key(spend_map),
+    ):
+        await _user_multi_budget_check(user_object=user)
+
+
+@pytest.mark.asyncio
+async def test_three_windows_hourly_under_daily_over():
+    user = _make_user(
+        budget_limits=[
+            {"budget_duration": "1hr", "max_budget": 5.0, "reset_at": None},
+            {"budget_duration": "1d", "max_budget": 50.0, "reset_at": None},
+            {"budget_duration": "1mo", "max_budget": 500.0, "reset_at": None},
+        ]
+    )
+    spend_map = {
+        "spend:user:test-user-123:window:1hr": 2.0,
+        "spend:user:test-user-123:window:1d": 55.0,
+        "spend:user:test-user-123:window:1mo": 100.0,
+    }
+    with patch(
+        "litellm.proxy.proxy_server.get_current_spend",
+        side_effect=_spend_by_counter_key(spend_map),
+    ):
+        with pytest.raises(litellm.BudgetExceededError) as exc_info:
+            await _user_multi_budget_check(user_object=user)
+
+    assert "1d" in str(exc_info.value)
+    assert "1hr" not in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_three_windows_only_monthly_over():
+    user = _make_user(
+        budget_limits=[
+            {"budget_duration": "1hr", "max_budget": 5.0, "reset_at": None},
+            {"budget_duration": "1d", "max_budget": 50.0, "reset_at": None},
+            {"budget_duration": "1mo", "max_budget": 500.0, "reset_at": None},
+        ]
+    )
+    spend_map = {
+        "spend:user:test-user-123:window:1hr": 1.0,
+        "spend:user:test-user-123:window:1d": 10.0,
+        "spend:user:test-user-123:window:1mo": 600.0,
+    }
+    with patch(
+        "litellm.proxy.proxy_server.get_current_spend",
+        side_effect=_spend_by_counter_key(spend_map),
+    ):
+        with pytest.raises(litellm.BudgetExceededError) as exc_info:
+            await _user_multi_budget_check(user_object=user)
+
+    assert "1mo" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_three_windows_hourly_over_stops_early():
+    user = _make_user(
+        budget_limits=[
+            {"budget_duration": "1hr", "max_budget": 5.0, "reset_at": None},
+            {"budget_duration": "1d", "max_budget": 50.0, "reset_at": None},
+            {"budget_duration": "1mo", "max_budget": 500.0, "reset_at": None},
+        ]
+    )
+    spend_map = {
+        "spend:user:test-user-123:window:1hr": 10.0,
+        "spend:user:test-user-123:window:1d": 200.0,
+        "spend:user:test-user-123:window:1mo": 999.0,
+    }
+    with patch(
+        "litellm.proxy.proxy_server.get_current_spend",
+        side_effect=_spend_by_counter_key(spend_map),
+    ):
+        with pytest.raises(litellm.BudgetExceededError) as exc_info:
+            await _user_multi_budget_check(user_object=user)
+
+    assert "1hr" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_spend_at_exact_limit_raises():
+    user = _make_user(
+        budget_limits=[
+            {"budget_duration": "1hr", "max_budget": 5.0, "reset_at": None},
+            {"budget_duration": "1d", "max_budget": 50.0, "reset_at": None},
+        ]
+    )
+    spend_map = {
+        "spend:user:test-user-123:window:1hr": 5.0,
+        "spend:user:test-user-123:window:1d": 10.0,
+    }
+    with patch(
+        "litellm.proxy.proxy_server.get_current_spend",
+        side_effect=_spend_by_counter_key(spend_map),
+    ):
+        with pytest.raises(litellm.BudgetExceededError) as exc_info:
+            await _user_multi_budget_check(user_object=user)
+
+    assert "1hr" in str(exc_info.value)
