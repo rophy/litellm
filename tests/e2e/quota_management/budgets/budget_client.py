@@ -32,7 +32,9 @@ _TEAM_READY_SLEEP_SECONDS = 0.4
 
 
 class UserNewBody(BaseModel):
-    max_budget: float
+    max_budget: float | None = None
+    budget_duration: str | None = None
+    budget_limits: list[BudgetWindow] | None = None
 
 
 class UserNewResponse(BaseModel):
@@ -244,12 +246,18 @@ class BudgetClient:
 
     # ---- internal user --------------------------------------------------
 
-    def create_user(self, *, max_budget: float) -> str:
+    def create_user(
+        self,
+        *,
+        max_budget: float | None = None,
+        budget_duration: str | None = None,
+        budget_limits: list[BudgetWindow] | None = None,
+    ) -> str:
         return unwrap(
             self.gateway.transport.post(
                 "/user/new",
                 headers=self.gateway.transport.master,
-                json=UserNewBody(max_budget=max_budget),
+                json=UserNewBody(max_budget=max_budget, budget_duration=budget_duration, budget_limits=budget_limits),
                 response_type=UserNewResponse,
             )
         ).user_id
