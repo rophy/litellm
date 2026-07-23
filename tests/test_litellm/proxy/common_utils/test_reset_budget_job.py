@@ -5,7 +5,6 @@ import sys
 import time
 import types
 from datetime import datetime, timedelta, timezone
-from datetime import time as dt_time
 from typing import Any, Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock
 
@@ -1747,7 +1746,6 @@ def test_get_data_reset_query_selects_null_budget_reset_at(table_name):
     auto-created from ``default_internal_user_params`` are never reset."""
     from litellm.proxy.utils import PrismaClient
 
-from typing import Any, Dict, List, Optional
     client = PrismaClient.__new__(PrismaClient)
     client.db = MagicMock()
 
@@ -1764,4 +1762,29 @@ from typing import Any, Dict, List, Optional
     )
 
     _asserts_null_reset_is_due(_extract_reset_where(find_many))
-from typing import Any, Dict, List, Optional
+
+
+def test_reset_budget_windows_resets_expired_user_window(monkeypatch):
+    now = datetime.utcnow()
+    expired = (now - timedelta(minutes=1)).isoformat() + "Z"
+
+    user_rows = [
+        {
+            "user_id": "user-expired",
+            "budget_limits": [{"budget_duration": "1hr", "reset_at": expired}],
+        }
+    ]
+    job, prisma_client, spend_counter_cache = _make_reset_budget_windows_job(
+        monkeypatch, key_rows=[], team_rows=[], user_rows=user_rows
+    )
+
+    asyncio.run(job.reset_budget_windows())
+
+    prisma_client.db.litellm_usertable.update.assert_awaited_once()
+    call_kwargs = prisma_client.db.litellm_usertable.update.await_args.kwargs
+    assert call_kwargs["where"] == {"user_id": "user-expired"}
+    assert "budget_limits" in call_kwargs["data"]
+
+    spend_counter_cache.in_memory_cache.set_cache.assert_any_call(
+        key="spend:user:user-expired:window:1hr", value=0.0
+    )
