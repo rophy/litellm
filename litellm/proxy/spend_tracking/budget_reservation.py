@@ -315,7 +315,7 @@ async def _get_budget_counters(
             )
         )
     if (
-        (team_object is None or team_object.team_id is None)
+        not (is_team_key and skip_user_budget_on_team_key)
         and user_object is not None
         and user_object.user_id is not None
     ):
