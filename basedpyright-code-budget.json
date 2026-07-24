@@ -3,16 +3,16 @@
     "limit": 37484
   },
   "reportArgumentType": {
-    "limit": 2704
+    "limit": 2721
   },
   "reportAssignmentType": {
     "limit": 330
   },
   "reportAttributeAccessIssue": {
-    "limit": 516
+    "limit": 519
   },
   "reportCallIssue": {
-    "limit": 124
+    "limit": 131
   },
   "reportConstantRedefinition": {
     "limit": 59
@@ -24,7 +24,7 @@
     "limit": 42
   },
   "reportExplicitAny": {
-    "limit": 10389
+    "limit": 10397
   },
   "reportFunctionMemberAccess": {
     "limit": 11
@@ -42,7 +42,7 @@
     "limit": 18
   },
   "reportIndexIssue": {
-    "limit": 37
+    "limit": 39
   },
   "reportInvalidTypeForm": {
     "limit": 35
@@ -51,37 +51,37 @@
     "limit": 5
   },
   "reportMatchNotExhaustive": {
-    "limit": 0
+    "limit": 2
   },
   "reportMissingParameterType": {
     "limit": 5900
   },
   "reportMissingTypeArgument": {
-    "limit": 15903
+    "limit": 15918
   },
   "reportMissingTypeStubs": {
     "limit": 41
   },
   "reportOperatorIssue": {
-    "limit": 0
+    "limit": 9
   },
   "reportOptionalCall": {
-    "limit": 0
+    "limit": 7
   },
   "reportOptionalIterable": {
-    "limit": 0
+    "limit": 6
   },
   "reportOptionalMemberAccess": {
-    "limit": 1085
+    "limit": 1086
   },
   "reportOptionalOperand": {
-    "limit": 0
+    "limit": 6
   },
   "reportOptionalSubscript": {
-    "limit": 0
+    "limit": 17
   },
   "reportPossiblyUnboundVariable": {
-    "limit": 77
+    "limit": 78
   },
   "reportPrivateUsage": {
     "limit": 2438
@@ -90,28 +90,28 @@
     "limit": 12
   },
   "reportReturnType": {
-    "limit": 225
+    "limit": 226
   },
   "reportTypedDictNotRequiredAccess": {
-    "limit": 27
+    "limit": 30
   },
   "reportUndefinedVariable": {
-    "limit": 0
+    "limit": 5
   },
   "reportUnknownArgumentType": {
-    "limit": 45894
+    "limit": 45905
   },
   "reportUnknownLambdaType": {
     "limit": 113
   },
   "reportUnknownMemberType": {
-    "limit": 40539
+    "limit": 40556
   },
   "reportUnknownParameterType": {
-    "limit": 20403
+    "limit": 20418
   },
   "reportUnknownVariableType": {
-    "limit": 32141
+    "limit": 32168
   },
   "reportUnnecessaryCast": {
     "limit": 177
@@ -123,7 +123,7 @@
     "limit": 7
   },
   "reportUnnecessaryIsInstance": {
-    "limit": 1209
+    "limit": 1210
   },
   "reportUntypedBaseClass": {
     "limit": 165

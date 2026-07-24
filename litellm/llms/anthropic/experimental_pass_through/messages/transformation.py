@@ -1,4 +1,4 @@
-from typing import Any, AsyncIterator, Dict, List, Optional, Tuple
+from typing import Any, AsyncIterator, Optional
 
 import httpx
 
@@ -71,7 +71,7 @@ class AnthropicMessagesConfig(BaseAnthropicMessagesConfig):
             # "metadata",
         ]
 
-    def _remove_scope_from_cache_control(self, anthropic_messages_request: Dict) -> None:
+    def _remove_scope_from_cache_control(self, anthropic_messages_request: dict) -> None:
         """
         Remove `scope` field from cache_control blocks.
 
@@ -232,12 +232,12 @@ class AnthropicMessagesConfig(BaseAnthropicMessagesConfig):
         self,
         headers: dict,
         model: str,
-        messages: List[Any],
+        messages: list[Any],
         optional_params: dict,
         litellm_params: dict,
         api_key: Optional[str] = None,
         api_base: Optional[str] = None,
-    ) -> Tuple[dict, Optional[str]]:
+    ) -> tuple[dict, Optional[str]]:
         # Check for Anthropic OAuth token in Authorization header
         headers, api_key = optionally_handle_anthropic_oauth(headers=headers, api_key=api_key)
 
@@ -258,7 +258,7 @@ class AnthropicMessagesConfig(BaseAnthropicMessagesConfig):
         return headers, api_base
 
     @staticmethod
-    def _translate_reasoning_effort_to_anthropic(model: str, optional_params: Dict, custom_llm_provider: str) -> None:
+    def _translate_reasoning_effort_to_anthropic(model: str, optional_params: dict, custom_llm_provider: str) -> None:
         """Map OpenAI-style ``reasoning_effort`` to native Anthropic params.
 
         Caller-supplied ``thinking`` / ``output_config`` win over the alias.
@@ -311,7 +311,7 @@ class AnthropicMessagesConfig(BaseAnthropicMessagesConfig):
 
     @staticmethod
     def _translate_legacy_thinking_for_adaptive_model(
-        model: str, optional_params: Dict, custom_llm_provider: str
+        model: str, optional_params: dict, custom_llm_provider: str
     ) -> None:
         """Translate legacy ``thinking.type=enabled`` to adaptive for 4.6/4.7.
         Caller-provided ``output_config.effort`` is never overridden.
@@ -345,7 +345,7 @@ class AnthropicMessagesConfig(BaseAnthropicMessagesConfig):
 
     @staticmethod
     def _translate_adaptive_effort_for_non_adaptive_model(
-        model: str, optional_params: Dict, max_tokens: Optional[int], custom_llm_provider: str
+        model: str, optional_params: dict, max_tokens: Optional[int], custom_llm_provider: str
     ) -> None:
         """Translate the 4.6+ adaptive-thinking interface (``thinking.type=adaptive``
         and/or ``output_config.effort``) down to what an older Anthropic model
@@ -475,14 +475,29 @@ class AnthropicMessagesConfig(BaseAnthropicMessagesConfig):
         if thinking_enabled or effort_enabled:
             optional_params.pop("temperature", None)
 
+    @staticmethod
+    def _cap_thinking_budget_to_max_tokens(thinking: dict, max_tokens: Optional[int]) -> Optional[dict]:
+        """Cap a legacy ``thinking.budget_tokens`` below ``max_tokens`` (Anthropic
+        requires ``max_tokens > budget_tokens``). Returns the (possibly capped)
+        thinking dict, or ``None`` when ``max_tokens`` is too small to fit even the
+        minimum thinking budget and thinking should be dropped."""
+        budget = thinking.get("budget_tokens")
+        if max_tokens is None or not isinstance(budget, int):
+            return thinking
+        if max_tokens <= ANTHROPIC_MIN_THINKING_BUDGET_TOKENS:
+            return None
+        if budget < max_tokens:
+            return thinking
+        return {**thinking, "budget_tokens": max_tokens - 1}
+
     def transform_anthropic_messages_request(
         self,
         model: str,
-        messages: List[Dict],
-        anthropic_messages_optional_request_params: Dict,
+        messages: list[dict],
+        anthropic_messages_optional_request_params: dict,
         litellm_params: GenericLiteLLMParams,
         headers: dict,
-    ) -> Dict:
+    ) -> dict:
         """
         No transformation is needed for Anthropic messages
 
