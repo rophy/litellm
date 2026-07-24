@@ -475,21 +475,6 @@ class AnthropicMessagesConfig(BaseAnthropicMessagesConfig):
         if thinking_enabled or effort_enabled:
             optional_params.pop("temperature", None)
 
-    @staticmethod
-    def _cap_thinking_budget_to_max_tokens(thinking: dict, max_tokens: Optional[int]) -> Optional[dict]:
-        """Cap a legacy ``thinking.budget_tokens`` below ``max_tokens`` (Anthropic
-        requires ``max_tokens > budget_tokens``). Returns the (possibly capped)
-        thinking dict, or ``None`` when ``max_tokens`` is too small to fit even the
-        minimum thinking budget and thinking should be dropped."""
-        budget = thinking.get("budget_tokens")
-        if max_tokens is None or not isinstance(budget, int):
-            return thinking
-        if max_tokens <= ANTHROPIC_MIN_THINKING_BUDGET_TOKENS:
-            return None
-        if budget < max_tokens:
-            return thinking
-        return {**thinking, "budget_tokens": max_tokens - 1}
-
     def transform_anthropic_messages_request(
         self,
         model: str,

@@ -5,6 +5,7 @@ import sys
 import time
 import types
 from datetime import datetime, timedelta, timezone
+from datetime import time as dt_time
 from typing import Any, Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock
 
