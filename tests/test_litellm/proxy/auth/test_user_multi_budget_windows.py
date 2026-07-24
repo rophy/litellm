@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 import litellm
-from litellm.models.team import BudgetLimitEntry
+from litellm.models.team import BudgetLimitEntry, LiteLLM_TeamTable
 from litellm.models.user import LiteLLM_UserTable
 from litellm.proxy.auth.auth_checks import _user_multi_budget_check
 
@@ -260,3 +260,65 @@ async def test_spend_at_exact_limit_raises():
             await _user_multi_budget_check(user_object=user)
 
     assert "1hr" in str(exc_info.value)
+
+
+def _make_team(team_id: str = "team-abc") -> LiteLLM_TeamTable:
+    return LiteLLM_TeamTable(team_id=team_id)
+
+
+@pytest.mark.asyncio
+async def test_team_key_enforces_user_windows_by_default():
+    user = _make_user(
+        budget_limits=[
+            {"budget_duration": "1hr", "max_budget": 5.0, "reset_at": None},
+        ]
+    )
+    with patch(
+        "litellm.proxy.proxy_server.get_current_spend",
+        new_callable=AsyncMock,
+        return_value=10.0,
+    ):
+        with pytest.raises(litellm.BudgetExceededError):
+            await _user_multi_budget_check(
+                user_object=user,
+                team_object=_make_team(),
+            )
+
+
+@pytest.mark.asyncio
+async def test_team_key_skips_user_windows_when_setting_enabled():
+    user = _make_user(
+        budget_limits=[
+            {"budget_duration": "1hr", "max_budget": 5.0, "reset_at": None},
+        ]
+    )
+    with patch(
+        "litellm.proxy.proxy_server.get_current_spend",
+        new_callable=AsyncMock,
+        return_value=10.0,
+    ):
+        await _user_multi_budget_check(
+            user_object=user,
+            team_object=_make_team(),
+            general_settings={"skip_user_budget_on_team_key": True},
+        )
+
+
+@pytest.mark.asyncio
+async def test_no_team_enforces_user_windows_regardless_of_setting():
+    user = _make_user(
+        budget_limits=[
+            {"budget_duration": "1hr", "max_budget": 5.0, "reset_at": None},
+        ]
+    )
+    with patch(
+        "litellm.proxy.proxy_server.get_current_spend",
+        new_callable=AsyncMock,
+        return_value=10.0,
+    ):
+        with pytest.raises(litellm.BudgetExceededError):
+            await _user_multi_budget_check(
+                user_object=user,
+                team_object=None,
+                general_settings={"skip_user_budget_on_team_key": True},
+            )
