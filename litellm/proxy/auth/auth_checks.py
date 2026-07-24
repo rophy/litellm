@@ -693,9 +693,11 @@ async def common_checks(
                     valid_token=valid_token,
                 ),
                 _user_max_budget_check(),
-                _user_multi_budget_check(user_object=user_object)
-                if (team_object is None or team_object.team_id is None) and user_object is not None
-                else None,
+                _user_multi_budget_check(
+                    user_object=user_object,
+                    team_object=team_object,
+                    general_settings=general_settings,
+                ),
                 _check_team_member_budget(
                     team_object=team_object,
                     user_object=user_object,
@@ -4009,6 +4011,8 @@ async def _team_multi_budget_check(
 
 async def _user_multi_budget_check(
     user_object: LiteLLM_UserTable | None,
+    team_object: Optional[LiteLLM_TeamTable] = None,
+    general_settings: dict | None = None,
 ):
     """
     Raises BudgetExceededError if any budget window in user_object.budget_limits is exceeded.
@@ -4016,6 +4020,9 @@ async def _user_multi_budget_check(
     Each window has its own Redis counter keyed by spend:user:{user_id}:window:{budget_duration}.
     """
     if user_object is None or not user_object.budget_limits:
+        return
+    is_team_key = team_object is not None and team_object.team_id is not None
+    if is_team_key and (general_settings or {}).get("skip_user_budget_on_team_key") is True:
         return
 
     from litellm.proxy.proxy_server import get_current_spend
