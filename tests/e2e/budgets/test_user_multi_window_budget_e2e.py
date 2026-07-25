@@ -25,7 +25,7 @@ WINDOW_SECONDS = 30
 
 
 def _call(client: BudgetClient, key: str):
-    return client.chat(key, "claude-haiku-4-5", f"user-window {unique_marker()}", max_tokens=16)
+    return client.chat(key, "gemini-2.5-flash", f"user-window {unique_marker()}", max_tokens=16)
 
 
 def test_user_short_window_blocks_then_resets(client: BudgetClient, resources: ResourceManager) -> None:
