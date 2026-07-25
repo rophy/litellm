@@ -2457,10 +2457,12 @@ async def increment_spend_counters(
                 increment=cost,
             )
 
-        user_obj = await user_api_key_cache.async_get_cache(key=scope_user_id)
-        if user_obj is not None:
-            user_budget_limits = getattr(user_obj, "budget_limits", None) or (
-                user_obj.get("budget_limits") if isinstance(user_obj, dict) else None
+        cached_user = await user_api_key_cache.async_get_cache(key=scope_user_id)
+        if cached_user is not None:
+            user_budget_limits: list[dict[str, object]] | str | None = (
+                getattr(cached_user, "budget_limits", None)
+                if not isinstance(cached_user, dict)
+                else cached_user.get("budget_limits")
             )
             if isinstance(user_budget_limits, str):
                 user_budget_limits = json.loads(user_budget_limits)

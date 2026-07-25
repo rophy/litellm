@@ -403,7 +403,6 @@ async def _get_budget_counters(
     if (
         not (is_team_key and skip_user_budget_on_team_key)
         and user_object is not None
-        and user_object.user_id is not None
     ):
         counters.extend(
             _get_budget_limit_counters(

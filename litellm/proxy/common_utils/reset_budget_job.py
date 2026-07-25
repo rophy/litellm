@@ -7,6 +7,7 @@ from typing import Any, Callable, List, Literal, Optional, Union
 
 import litellm
 from litellm._logging import verbose_proxy_logger
+from litellm.caching import DualCache
 from litellm.proxy._types import (
     LiteLLM_BudgetTableFull,
     LiteLLM_EndUserTable,
@@ -678,7 +679,7 @@ class ResetBudgetJob:
     async def _reset_expired_window(
         window: dict,
         counter_key: str,
-        spend_counter_cache: Any,
+        spend_counter_cache: DualCache,
         now: datetime,
         reset_settings: BudgetResetSettings,
     ) -> bool:
@@ -764,7 +765,7 @@ class ResetBudgetJob:
         counter_prefix: str,
         update_fn: Callable[[str, str], Coroutine[Any, Any, Any]],
         entity_label: str,
-        spend_counter_cache: Any,
+        spend_counter_cache: DualCache,
         now: datetime,
     ) -> None:
         try:
@@ -773,7 +774,7 @@ class ResetBudgetJob:
                 raw = row["budget_limits"]
                 if not raw:
                     continue
-                windows: list = raw if isinstance(raw, list) else json.loads(raw)
+                windows: list[dict[str, object]] = raw if isinstance(raw, list) else json.loads(raw)
                 changed = False
                 for window in windows:
                     counter_key = f"{counter_prefix}:{row[id_column]}:window:{window['budget_duration']}"

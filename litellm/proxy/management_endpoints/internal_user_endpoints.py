@@ -1118,14 +1118,14 @@ def _update_internal_user_params(
             )
 
     if "budget_limits" in non_default_values:
-        raw_windows = non_default_values["budget_limits"]
+        raw_windows: list[BudgetLimitEntry | dict[str, object]] | None = non_default_values["budget_limits"]
         if raw_windows:
             from litellm.proxy.common_utils.timezone_utils import get_budget_reset_time
 
-            initialized_windows = []
+            initialized_windows: list[dict[str, object]] = []
             for window in raw_windows:
-                w = window if isinstance(window, dict) else window.model_dump()
-                w["reset_at"] = get_budget_reset_time(budget_duration=w["budget_duration"]).isoformat()
+                w: dict[str, object] = window if isinstance(window, dict) else window.model_dump()
+                w["reset_at"] = get_budget_reset_time(budget_duration=str(w["budget_duration"])).isoformat()
                 initialized_windows.append(w)
             non_default_values["budget_limits"] = json.dumps(initialized_windows)
         else:
