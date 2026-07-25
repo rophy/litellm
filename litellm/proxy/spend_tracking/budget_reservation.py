@@ -400,10 +400,7 @@ async def _get_budget_counters(
                 entity_id=user_object.user_id,
             )
         )
-    if (
-        not (is_team_key and skip_user_budget_on_team_key)
-        and user_object is not None
-    ):
+    if not (is_team_key and skip_user_budget_on_team_key) and user_object is not None:
         counters.extend(
             _get_budget_limit_counters(
                 entity_prefix=f"spend:user:{user_object.user_id}",
