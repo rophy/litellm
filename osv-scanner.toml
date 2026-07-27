@@ -2,3 +2,8 @@
 id = "GHSA-w8v5-vhqr-4h9v"
 ignoreUntil = 2026-09-09
 reason = "diskcache has no fixed release published; remove this entry once one exists"
+
+[[IgnoredVulns]]
+id = "GHSA-mw54-j2v2-42hr"
+ignoreUntil = 2026-09-09
+reason = "ddtrace fix requires 4.x but upstream pins <3.0; awaiting upstream constraint update"
