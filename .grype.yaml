@@ -1,0 +1,3 @@
+ignore:
+  - vulnerability: GHSA-mw54-j2v2-42hr
+    # ddtrace fix requires 4.x but upstream pins <3.0; awaiting upstream constraint update

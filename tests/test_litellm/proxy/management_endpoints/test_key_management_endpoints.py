@@ -815,6 +815,74 @@ async def test_generate_key_helper_fn_with_budget_fallbacks(monkeypatch):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "request_type, table_name, capture_table",
+    [
+        ("user", "user", "user"),
+        ("key", "key", "key"),
+    ],
+    ids=["user_new", "key_generate"],
+)
+async def test_generate_key_helper_fn_persists_budget_limits(
+    monkeypatch, request_type, table_name, capture_table
+):
+    """budget_limits must be persisted for both /user/new and /key/generate."""
+    mock_prisma_client = AsyncMock()
+    mock_prisma_client.jsonify_object = lambda data: data  # type: ignore
+    mock_prisma_client.db = MagicMock()
+    mock_prisma_client.db.litellm_objectpermissiontable = MagicMock()
+    mock_prisma_client.db.litellm_objectpermissiontable.create = AsyncMock(
+        return_value=MagicMock(object_permission_id=None)
+    )
+
+    captured_data = {}
+
+    async def _insert_data_side_effect(*args, **kwargs):
+        tbl = kwargs.get("table_name")
+        if tbl == capture_table:
+            captured_data.update(kwargs.get("data", {}))
+        if tbl == "user":
+            return MagicMock(models=[], spend=0)
+        elif tbl == "key":
+            return MagicMock(
+                token="hashed_token_budget_limits",
+                litellm_budget_table=None,
+                object_permission=None,
+                created_at=None,
+                updated_at=None,
+            )
+        return MagicMock()
+
+    mock_prisma_client.insert_data = AsyncMock(side_effect=_insert_data_side_effect)
+    monkeypatch.setattr("litellm.proxy.proxy_server.prisma_client", mock_prisma_client)
+
+    from litellm.proxy.management_endpoints.key_management_endpoints import (
+        generate_key_helper_fn,
+    )
+
+    budget_limits = [
+        {"budget_duration": "30s", "max_budget": 0.5},
+        {"budget_duration": "1h", "max_budget": 5.0},
+    ]
+    await generate_key_helper_fn(
+        request_type=request_type,
+        table_name=table_name,
+        user_id="test-budget-limits-user",
+        budget_limits=budget_limits,
+    )
+
+    assert "budget_limits" in captured_data, f"budget_limits missing from {capture_table}_data"
+    persisted = json.loads(captured_data["budget_limits"])
+    assert len(persisted) == 2
+    assert persisted[0]["budget_duration"] == "30s"
+    assert persisted[0]["max_budget"] == 0.5
+    assert persisted[1]["budget_duration"] == "1h"
+    assert persisted[1]["max_budget"] == 5.0
+    for window in persisted:
+        assert "reset_at" in window
+
+
+@pytest.mark.asyncio
 async def test_key_generation_with_mcp_tool_permissions(monkeypatch):
     """
     Test that /key/generate correctly handles mcp_tool_permissions in object_permission.
