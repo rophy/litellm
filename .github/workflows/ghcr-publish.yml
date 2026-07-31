@@ -36,7 +36,7 @@ jobs:
         uses: docker/build-push-action@0adf9959216b96bec444f325f1e493d4aa344497 # v6.14.0
         with:
           context: .
-          file: ./docker/Dockerfile.non_root
+          file: ./Dockerfile
           push: true
           tags: ghcr.io/rophy/litellm:${{ steps.meta.outputs.image_tag }}
           cache-from: type=gha
